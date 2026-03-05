@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  nagiosgen:
+    build:
+      context: ../../
+      dockerfile: infrastructure/docker/Dockerfile
+    container_name: nagios-config-generator
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=production
+      - PYTHONDONTWRITEBYTECODE=1
+    volumes:
+      - nagios_output:/app/output
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/')" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # Optional: Run Nagios alongside to test generated configs
+  nagios:
+    image: jasonrivers/nagios:latest
+    container_name: nagios-server
+    ports:
+      - "8080:80"
+    volumes:
+      - nagios_output:/opt/nagios/etc/objects/generated:ro
+      - ../../monitoring/nagios:/opt/nagios/etc/objects/monitoring:ro
+    environment:
+      - NAGIOSADMIN_USER=nagiosadmin
+      - NAGIOSADMIN_PASS=nagios
+    depends_on:
+      - nagiosgen
+    profiles:
+      - full
+
+volumes:
+  nagios_output:
+    driver: local

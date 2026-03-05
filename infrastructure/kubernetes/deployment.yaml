@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nagios-config-generator
+  labels:
+    app: nagiosgen
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nagiosgen
+  template:
+    metadata:
+      labels:
+        app: nagiosgen
+    spec:
+      containers:
+        - name: nagiosgen
+          image: nagios-config-generator:latest
+          ports:
+            - containerPort: 5000
+          env:
+            - name: FLASK_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: nagiosgen-config
+                  key: flask_env
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "250m"
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 5000
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 10

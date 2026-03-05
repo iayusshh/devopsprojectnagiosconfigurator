@@ -1,0 +1,160 @@
+# ---- Sample Nagios Configuration Input ----
+# This file defines a complete monitoring setup with hosts, services,
+# contacts, hostgroups, contact groups, and commands.
+# Usage:
+#   python -m src.main.cli generate -i examples/sample_input.yaml -o output/
+
+hosts:
+  - host_name: webserver01
+    alias: Production Web Server 01
+    address: 192.168.1.10
+    max_check_attempts: 5
+    check_period: 24x7
+    notification_interval: 30
+    notification_period: 24x7
+    check_command: check-host-alive
+    contact_groups: admins
+    hostgroups: web-servers
+
+  - host_name: webserver02
+    alias: Production Web Server 02
+    address: 192.168.1.11
+    max_check_attempts: 5
+    check_period: 24x7
+    notification_interval: 30
+    notification_period: 24x7
+    check_command: check-host-alive
+    contact_groups: admins
+    hostgroups: web-servers
+
+  - host_name: dbserver01
+    alias: Primary Database Server
+    address: 192.168.1.20
+    max_check_attempts: 3
+    check_period: 24x7
+    notification_interval: 15
+    notification_period: 24x7
+    check_command: check-host-alive
+    contact_groups: admins,dba-team
+    hostgroups: db-servers
+
+  - host_name: appserver01
+    alias: Application Server
+    address: 192.168.1.30
+    max_check_attempts: 5
+    check_period: 24x7
+    notification_interval: 30
+    notification_period: 24x7
+    check_command: check-host-alive
+    contact_groups: admins
+
+services:
+  - host_name: webserver01
+    service_description: HTTP Check
+    check_command: check_http
+    max_check_attempts: 4
+    check_interval: 5
+    retry_interval: 1
+    check_period: 24x7
+    notification_interval: 30
+    notification_period: 24x7
+    contact_groups: admins
+
+  - host_name: webserver01
+    service_description: HTTPS Check
+    check_command: check_http
+    max_check_attempts: 4
+    check_interval: 5
+    retry_interval: 1
+    check_period: 24x7
+    notification_interval: 30
+    notification_period: 24x7
+    contact_groups: admins
+
+  - host_name: webserver02
+    service_description: HTTP Check
+    check_command: check_http
+    check_interval: 5
+    retry_interval: 1
+    contact_groups: admins
+
+  - host_name: dbserver01
+    service_description: MySQL Status
+    check_command: check_tcp
+    max_check_attempts: 3
+    check_interval: 3
+    retry_interval: 1
+    check_period: 24x7
+    notification_interval: 15
+    notification_period: 24x7
+    contact_groups: admins,dba-team
+
+  - host_name: appserver01
+    service_description: SSH Access
+    check_command: check_ssh
+    check_interval: 10
+    retry_interval: 2
+    contact_groups: admins
+
+  - host_name: appserver01
+    service_description: Disk Usage
+    check_command: check_disk
+    check_interval: 15
+    retry_interval: 5
+    contact_groups: admins
+
+contacts:
+  - contact_name: admin
+    alias: System Administrator
+    email: admin@example.com
+    service_notification_period: 24x7
+    host_notification_period: 24x7
+    service_notification_options: w,u,c,r
+    host_notification_options: d,u,r
+    service_notification_commands: notify-service-by-email
+    host_notification_commands: notify-host-by-email
+
+  - contact_name: devops
+    alias: DevOps Engineer
+    email: devops@example.com
+    service_notification_period: 24x7
+    host_notification_period: 24x7
+    service_notification_options: w,u,c,r
+    host_notification_options: d,u,r
+    service_notification_commands: notify-service-by-email
+    host_notification_commands: notify-host-by-email
+
+  - contact_name: dba
+    alias: Database Administrator
+    email: dba@example.com
+    service_notification_period: workhours
+    host_notification_period: 24x7
+    service_notification_options: w,u,c,r
+    host_notification_options: d,u,r
+    service_notification_commands: notify-service-by-email
+    host_notification_commands: notify-host-by-email
+
+contact_groups:
+  - contactgroup_name: admins
+    alias: Nagios Administrators
+    members: admin,devops
+
+  - contactgroup_name: dba-team
+    alias: Database Administrators
+    members: dba
+
+hostgroups:
+  - hostgroup_name: web-servers
+    alias: Web Servers
+    members: webserver01,webserver02
+
+  - hostgroup_name: db-servers
+    alias: Database Servers
+    members: dbserver01
+
+commands:
+  - command_name: notify-host-by-email
+    command_line: /usr/bin/printf "%b" "Host '$HOSTNAME$' is $HOSTSTATE$" | /usr/bin/mail -s "Host Alert" $CONTACTEMAIL$
+
+  - command_name: notify-service-by-email
+    command_line: /usr/bin/printf "%b" "Service '$SERVICEDESC$' on '$HOSTNAME$' is $SERVICESTATE$" | /usr/bin/mail -s "Service Alert" $CONTACTEMAIL$

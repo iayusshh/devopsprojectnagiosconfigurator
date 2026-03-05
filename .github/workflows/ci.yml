@@ -1,0 +1,93 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint:
+    name: Code Quality Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run flake8 linter
+        run: |
+          flake8 src/ tests/ --max-line-length=120 --statistics --count
+
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    needs: lint
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run unit tests
+        run: |
+          python -m pytest tests/unit/ -v --tb=short
+
+      - name: Run integration tests
+        run: |
+          python -m pytest tests/integration/ -v --tb=short
+
+      - name: Run CLI smoke test
+        run: |
+          python -m src.main.cli validate -i examples/sample_input.yaml
+          python -m src.main.cli generate -i examples/sample_input.yaml -o /tmp/nagios_output
+          ls -la /tmp/nagios_output/
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: |
+            /tmp/nagios_output/
+
+  docker-build:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: |
+          docker build -t nagios-config-generator:latest -f infrastructure/docker/Dockerfile .
+
+      - name: Test Docker container
+        run: |
+          docker run -d --name nagiosgen-test -p 5000:5000 nagios-config-generator:latest
+          sleep 5
+          curl -f http://localhost:5000/ || exit 1
+          docker stop nagiosgen-test
+          docker rm nagiosgen-test
+
+      - name: Docker image info
+        run: |
+          docker images nagios-config-generator:latest

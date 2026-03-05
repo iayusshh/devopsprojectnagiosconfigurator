@@ -1,0 +1,272 @@
+{% extends "base.html" %}
+
+{% block title %}NagiosGen — Generate Configs{% endblock %}
+
+{% block content %}
+<div class="hero-section">
+    <h2 class="hero-title">Generate Nagios Configurations</h2>
+    <p class="hero-subtitle">Add your hosts, services, and contacts below — we'll generate production-ready
+        <code>.cfg</code> files instantly.</p>
+</div>
+
+<form id="configForm" action="/generate" method="POST" class="config-form">
+
+    <!-- ========== HOSTS SECTION ========== -->
+    <section class="form-section" id="hostsSection">
+        <div class="section-header">
+            <div class="section-title-group">
+                <span class="section-icon">🖥️</span>
+                <h3>Hosts</h3>
+                <span class="badge" id="hostCount">0</span>
+            </div>
+            <button type="button" class="btn btn-add" onclick="addHost()">
+                <span>+</span> Add Host
+            </button>
+        </div>
+        <div id="hostsContainer" class="entries-container">
+            <div class="empty-state">
+                <p>No hosts added yet. Click <strong>"Add Host"</strong> to get started.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== SERVICES SECTION ========== -->
+    <section class="form-section" id="servicesSection">
+        <div class="section-header">
+            <div class="section-title-group">
+                <span class="section-icon">⚙️</span>
+                <h3>Services</h3>
+                <span class="badge" id="serviceCount">0</span>
+            </div>
+            <button type="button" class="btn btn-add" onclick="addService()">
+                <span>+</span> Add Service
+            </button>
+        </div>
+        <div id="servicesContainer" class="entries-container">
+            <div class="empty-state">
+                <p>No services added yet. Click <strong>"Add Service"</strong> to add monitoring checks.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== CONTACTS SECTION ========== -->
+    <section class="form-section" id="contactsSection">
+        <div class="section-header">
+            <div class="section-title-group">
+                <span class="section-icon">👤</span>
+                <h3>Contacts</h3>
+                <span class="badge" id="contactCount">0</span>
+            </div>
+            <button type="button" class="btn btn-add" onclick="addContact()">
+                <span>+</span> Add Contact
+            </button>
+        </div>
+        <div id="contactsContainer" class="entries-container">
+            <div class="empty-state">
+                <p>No contacts added yet. Click <strong>"Add Contact"</strong> to set up alert recipients.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== CONTACT GROUPS SECTION ========== -->
+    <section class="form-section" id="contactGroupsSection">
+        <div class="section-header">
+            <div class="section-title-group">
+                <span class="section-icon">👥</span>
+                <h3>Contact Groups</h3>
+                <span class="badge" id="cgCount">0</span>
+            </div>
+            <button type="button" class="btn btn-add" onclick="addContactGroup()">
+                <span>+</span> Add Group
+            </button>
+        </div>
+        <div id="contactGroupsContainer" class="entries-container">
+            <div class="empty-state">
+                <p>No contact groups added yet. Click <strong>"Add Group"</strong> to create one.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== SUBMIT ========== -->
+    <div class="submit-section">
+        <button type="submit" class="btn btn-generate" id="generateBtn">
+            <span class="btn-icon">⚡</span>
+            Generate Configuration Files
+        </button>
+    </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let hostIndex = 0, serviceIndex = 0, contactIndex = 0, cgIndex = 0;
+
+    function updateCounts() {
+        document.getElementById('hostCount').textContent = document.querySelectorAll('#hostsContainer .entry-card').length;
+        document.getElementById('serviceCount').textContent = document.querySelectorAll('#servicesContainer .entry-card').length;
+        document.getElementById('contactCount').textContent = document.querySelectorAll('#contactsContainer .entry-card').length;
+        document.getElementById('cgCount').textContent = document.querySelectorAll('#contactGroupsContainer .entry-card').length;
+    }
+
+    function removeEntry(btn) {
+        const card = btn.closest('.entry-card');
+        card.style.animation = 'fadeOut 0.3s ease forwards';
+        setTimeout(() => {
+            card.remove();
+            updateCounts();
+            // Show empty state if no entries left
+            ['hostsContainer', 'servicesContainer', 'contactsContainer', 'contactGroupsContainer'].forEach(id => {
+                const container = document.getElementById(id);
+                if (!container.querySelector('.entry-card')) {
+                    const section = container.closest('.form-section');
+                    const emptyState = section.querySelector('.empty-state');
+                    if (!container.querySelector('.empty-state')) {
+                        container.innerHTML = '<div class="empty-state"><p>No entries. Click the Add button above.</p></div>';
+                    }
+                }
+            });
+        }, 280);
+    }
+
+    function clearEmptyState(containerId) {
+        const container = document.getElementById(containerId);
+        const emptyState = container.querySelector('.empty-state');
+        if (emptyState) emptyState.remove();
+    }
+
+    function addHost() {
+        clearEmptyState('hostsContainer');
+        hostIndex++;
+        const html = `
+    <div class="entry-card" style="animation: fadeIn 0.3s ease">
+        <div class="entry-header">
+            <span class="entry-label">Host #${hostIndex}</span>
+            <button type="button" class="btn-remove" onclick="removeEntry(this)" title="Remove">×</button>
+        </div>
+        <div class="fields-grid">
+            <div class="field">
+                <label>Hostname <span class="required">*</span></label>
+                <input type="text" name="host_name[]" placeholder="e.g. webserver01" required>
+            </div>
+            <div class="field">
+                <label>Alias</label>
+                <input type="text" name="host_alias[]" placeholder="e.g. Web Server 01">
+            </div>
+            <div class="field">
+                <label>IP Address <span class="required">*</span></label>
+                <input type="text" name="host_address[]" placeholder="e.g. 192.168.1.10" required>
+            </div>
+            <div class="field">
+                <label>Contact Groups</label>
+                <input type="text" name="host_contact_groups[]" placeholder="e.g. admins" value="admins">
+            </div>
+        </div>
+    </div>`;
+        document.getElementById('hostsContainer').insertAdjacentHTML('beforeend', html);
+        updateCounts();
+    }
+
+    function addService() {
+        clearEmptyState('servicesContainer');
+        serviceIndex++;
+        const html = `
+    <div class="entry-card" style="animation: fadeIn 0.3s ease">
+        <div class="entry-header">
+            <span class="entry-label">Service #${serviceIndex}</span>
+            <button type="button" class="btn-remove" onclick="removeEntry(this)" title="Remove">×</button>
+        </div>
+        <div class="fields-grid">
+            <div class="field">
+                <label>Host Name <span class="required">*</span></label>
+                <input type="text" name="svc_host_name[]" placeholder="e.g. webserver01" required>
+            </div>
+            <div class="field">
+                <label>Description <span class="required">*</span></label>
+                <input type="text" name="svc_description[]" placeholder="e.g. HTTP Check" required>
+            </div>
+            <div class="field">
+                <label>Check Command <span class="required">*</span></label>
+                <select name="svc_check_command[]">
+                    <option value="check_ping">check_ping</option>
+                    <option value="check_http">check_http</option>
+                    <option value="check_ssh">check_ssh</option>
+                    <option value="check_disk">check_disk</option>
+                    <option value="check_load">check_load</option>
+                    <option value="check_procs">check_procs</option>
+                    <option value="check_swap">check_swap</option>
+                    <option value="check_tcp">check_tcp</option>
+                    <option value="check_dns">check_dns</option>
+                    <option value="check_smtp">check_smtp</option>
+                    <option value="check_nrpe">check_nrpe</option>
+                </select>
+            </div>
+        </div>
+    </div>`;
+        document.getElementById('servicesContainer').insertAdjacentHTML('beforeend', html);
+        updateCounts();
+    }
+
+    function addContact() {
+        clearEmptyState('contactsContainer');
+        contactIndex++;
+        const html = `
+    <div class="entry-card" style="animation: fadeIn 0.3s ease">
+        <div class="entry-header">
+            <span class="entry-label">Contact #${contactIndex}</span>
+            <button type="button" class="btn-remove" onclick="removeEntry(this)" title="Remove">×</button>
+        </div>
+        <div class="fields-grid">
+            <div class="field">
+                <label>Contact Name <span class="required">*</span></label>
+                <input type="text" name="contact_name[]" placeholder="e.g. admin" required>
+            </div>
+            <div class="field">
+                <label>Alias</label>
+                <input type="text" name="contact_alias[]" placeholder="e.g. System Administrator">
+            </div>
+            <div class="field">
+                <label>Email <span class="required">*</span></label>
+                <input type="email" name="contact_email[]" placeholder="e.g. admin@example.com" required>
+            </div>
+        </div>
+    </div>`;
+        document.getElementById('contactsContainer').insertAdjacentHTML('beforeend', html);
+        updateCounts();
+    }
+
+    function addContactGroup() {
+        clearEmptyState('contactGroupsContainer');
+        cgIndex++;
+        const html = `
+    <div class="entry-card" style="animation: fadeIn 0.3s ease">
+        <div class="entry-header">
+            <span class="entry-label">Contact Group #${cgIndex}</span>
+            <button type="button" class="btn-remove" onclick="removeEntry(this)" title="Remove">×</button>
+        </div>
+        <div class="fields-grid">
+            <div class="field">
+                <label>Group Name <span class="required">*</span></label>
+                <input type="text" name="cg_name[]" placeholder="e.g. admins" required>
+            </div>
+            <div class="field">
+                <label>Alias</label>
+                <input type="text" name="cg_alias[]" placeholder="e.g. Nagios Admins">
+            </div>
+            <div class="field">
+                <label>Members</label>
+                <input type="text" name="cg_members[]" placeholder="e.g. admin,devops">
+            </div>
+        </div>
+    </div>`;
+        document.getElementById('contactGroupsContainer').insertAdjacentHTML('beforeend', html);
+        updateCounts();
+    }
+
+    // Add initial entries on page load for a better UX
+    document.addEventListener('DOMContentLoaded', () => {
+        addHost();
+        addService();
+        addContact();
+    });
+</script>
+{% endblock %}

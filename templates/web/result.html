@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}NagiosGen — Generated Configs{% endblock %}
+
+{% block content %}
+<div class="hero-section">
+    <h2 class="hero-title">✅ Configuration Generated</h2>
+    <p class="hero-subtitle">
+        Your Nagios configuration files have been generated successfully.
+        Review the output below and download the files.
+    </p>
+</div>
+
+<div class="result-stats">
+    <div class="stat-card">
+        <span class="stat-value">{{ config.hosts | length }}</span>
+        <span class="stat-label">Hosts</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-value">{{ config.services | length }}</span>
+        <span class="stat-label">Services</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-value">{{ config.contacts | length }}</span>
+        <span class="stat-label">Contacts</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-value">{{ configs | length }}</span>
+        <span class="stat-label">Files</span>
+    </div>
+</div>
+
+<div class="config-results">
+    {% for filename, content in configs.items() %}
+    <div class="config-file-card">
+        <div class="config-file-header">
+            <div class="file-name-group">
+                <span class="file-icon">📄</span>
+                <span class="file-name">{{ filename }}</span>
+            </div>
+            <button type="button" class="btn btn-copy" onclick="copyConfig(this, '{{ filename }}')">
+                📋 Copy
+            </button>
+        </div>
+        <pre class="config-content" id="config-{{ filename | replace('.', '-') }}"><code>{{ content }}</code></pre>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="result-actions">
+    <form action="/download" method="POST" style="display: inline">
+        <input type="hidden" name="configs_json" value='{{ config.model_dump_json() }}'>
+        <button type="submit" class="btn btn-generate">
+            <span class="btn-icon">📦</span>
+            Download as ZIP
+        </button>
+    </form>
+    <a href="/" class="btn btn-secondary">
+        <span class="btn-icon">←</span>
+        Generate New Config
+    </a>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function copyConfig(btn, filename) {
+        const id = 'config-' + filename.replaceAll('.', '-');
+        const content = document.getElementById(id).textContent;
+        navigator.clipboard.writeText(content).then(() => {
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '✅ Copied!';
+            btn.classList.add('copied');
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.classList.remove('copied');
+            }, 2000);
+        });
+    }
+</script>
+{% endblock %}

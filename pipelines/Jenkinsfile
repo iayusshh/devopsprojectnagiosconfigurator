@@ -1,0 +1,91 @@
+pipeline {
+    agent any
+
+    parameters {
+        string(name: 'BRANCH', defaultValue: 'main', description: 'Branch to build')
+        choice(name: 'ENVIRONMENT', choices: ['dev', 'staging', 'prod'], description: 'Deployment environment')
+    }
+
+    environment {
+        APP_NAME = 'nagios-config-generator'
+        VERSION = "${env.BUILD_ID}"
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: "${params.BRANCH}", url: 'https://github.com/iayusshh/devopsprojectnagiosconfigurator.git'
+            }
+        }
+
+        stage('Code Quality') {
+            steps {
+                script {
+                    sh 'pip install -r requirements.txt'
+                    sh 'flake8 src/ tests/ --max-line-length=120 --statistics || true'
+                }
+            }
+        }
+
+        stage('Build') {
+            steps {
+                script {
+                    sh "docker build -t ${APP_NAME}:${VERSION} -f infrastructure/docker/Dockerfile ."
+                }
+            }
+        }
+
+        stage('Test') {
+            steps {
+                script {
+                    sh 'python -m pytest tests/ -v --tb=short'
+                    sh 'python -m src.main.cli validate -i examples/sample_input.yaml'
+                    sh 'python -m src.main.cli generate -i examples/sample_input.yaml -o /tmp/nagios_test_output'
+                }
+            }
+        }
+
+        stage('Security Scan') {
+            steps {
+                script {
+                    sh "trivy image ${APP_NAME}:${VERSION} || true"
+                }
+            }
+        }
+
+        stage('Deploy to Staging') {
+            when {
+                expression { params.ENVIRONMENT == 'staging' }
+            }
+            steps {
+                script {
+                    sh "docker-compose -f infrastructure/docker/docker-compose.yml up -d"
+                }
+            }
+        }
+
+        stage('Deploy to Production') {
+            when {
+                expression { params.ENVIRONMENT == 'prod' }
+            }
+            steps {
+                input message: 'Deploy to production?', ok: 'Deploy'
+                script {
+                    sh "kubectl apply -f infrastructure/kubernetes/"
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "Pipeline completed successfully for ${APP_NAME}:${VERSION}"
+        }
+        failure {
+            echo "Pipeline failed for ${APP_NAME}:${VERSION}"
+        }
+        always {
+            cleanWs()
+        }
+    }
+}
