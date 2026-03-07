@@ -307,9 +307,9 @@ This project is licensed under the MIT License — see the [LICENSE](LICENSE) fi
 
 ## Contact
 
-**Student:** [Your Name]  
-**Email:** [Your University Email]  
-**GitHub:** [Your GitHub Profile]  
+**Student:** Ayush Anand 
+**Email:** ayush.23fe10cse00339@muj.manipal.edu
+**GitHub:** www.github.com/iayusshh 
 
 **Course Coordinator:** Mr. Jay Shankar Sharma  
 **Consultation Hours:** Thursday & Friday, 5–6 PM, LHC 308F
