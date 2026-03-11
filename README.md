@@ -253,6 +253,7 @@ kubectl get pods,svc,deploy
 
 ## Documentation
 
+- [**Project Explanation**](docs/PROJECT_EXPLANATION.md) — Comprehensive explanation of the project: how it works, code walkthrough, pros/cons, and FAQ
 - [User Guide](docs/user_guide.md)
 - [Design Document](docs/design_document.md)
 - [Project Plan](docs/project_plan.md)
