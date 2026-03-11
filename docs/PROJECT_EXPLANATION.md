@@ -448,7 +448,7 @@ The container runs the web UI via `gunicorn` (a production-grade WSGI server) wi
 
 **`infrastructure/docker/docker-compose.yml`** — Defines two services:
 
-1. **`nagiosgen`** — the configuration generator web UI (port 5001 → 5000).
+1. **`nagiosgen`** — the configuration generator web UI (host port 5001 maps to container port 5000, so access it at `http://localhost:5001`).
 2. **`nagios`** (optional, under the `full` profile) — a real Nagios server that mounts the generated configs, so you can test them immediately.
 
 ### 8.2 Kubernetes
@@ -643,7 +643,7 @@ A:
 cd infrastructure/docker
 docker-compose --profile full up --build -d
 ```
-This starts both the generator (port 5001) and a Nagios server (port 8080) that mounts the generated configs.
+This starts both the generator (accessible at `http://localhost:5001`, mapped to container port 5000) and a Nagios server (accessible at `http://localhost:8080`) that mounts the generated configs.
 
 **Q: What does the CI/CD pipeline do?**
 A: The GitHub Actions pipeline has 3 stages: (1) **Lint** — runs flake8 to check code quality, (2) **Test** — runs all pytest tests plus a CLI smoke test, (3) **Docker Build** — builds the Docker image and verifies the web UI responds to HTTP requests.
