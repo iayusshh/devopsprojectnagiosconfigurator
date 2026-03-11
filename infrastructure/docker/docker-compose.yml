@@ -7,7 +7,7 @@ services:
       dockerfile: infrastructure/docker/Dockerfile
     container_name: nagios-config-generator
     ports:
-      - "5001:5000"
+      - "5001:5001"
     environment:
       - FLASK_ENV=production
       - PYTHONDONTWRITEBYTECODE=1
@@ -15,12 +15,11 @@ services:
       - nagios_output:/app/output
     restart: unless-stopped
     healthcheck:
-      test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/')" ]
+      test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5001/')" ]
       interval: 30s
       timeout: 5s
       retries: 3
 
-  # Optional: Run Nagios alongside to test generated configs
   nagios:
     image: jasonrivers/nagios:latest
     container_name: nagios-server
